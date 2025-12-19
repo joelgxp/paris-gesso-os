@@ -1,0 +1,50 @@
+name: Deploy via SSH
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ssh-deploy:
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Setup SSH
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y sshpass
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy Laravel
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSPHRASE }}" ssh -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "cd 'parisgesso.joelsouza.com.br' && \
+            git pull origin main && \
+            if command -v composer >/dev/null 2>&1; then \
+              COMPOSER_CMD='composer'; \
+            elif [ -f composer.phar ]; then \
+              COMPOSER_CMD='php composer.phar'; \
+            else \
+              curl -sS https://getcomposer.org/installer | php && \
+              COMPOSER_CMD='php composer.phar'; \
+            fi && \
+            if [ \"\$COMPOSER_CMD\" = 'php composer.phar' ]; then \
+              php composer.phar install --no-dev --optimize-autoloader --no-interaction; \
+            else \
+              \$COMPOSER_CMD install --no-dev --optimize-autoloader --no-interaction; \
+            fi && \
+            sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env 2>/dev/null || echo 'APP_ENV=production' >> .env && \
+            sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env 2>/dev/null || echo 'APP_DEBUG=false' >> .env && \
+            php artisan migrate --force 2>/dev/null || true && \
+            php artisan config:clear && \
+            php artisan cache:clear && \
+            php artisan route:clear && \
+            php artisan view:clear && \
+            php artisan config:cache && \
+            php artisan route:cache && \
+            php artisan view:cache && \
+            php artisan optimize"
