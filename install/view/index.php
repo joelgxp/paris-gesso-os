@@ -6,7 +6,6 @@
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="<?php echo $settings['title']; ?>">
-  <meta name="author" content="Rodrigo Ribeiro - me@rodrigo3d.com">
   <link rel="shortcut icon" href="<?php echo $dashboard_url; ?>install/assets/images/favicon.ico" type="image/x-icon" />
 
   <title><?php echo $settings['title']; ?></title>
